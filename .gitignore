@@ -1,3 +1,10 @@
+.generated_files
+.vscode
+dist
+nbproject
+
+# === Template Stuff ===
+
 # Prerequisites
 *.d
 
