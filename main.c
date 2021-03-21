@@ -124,7 +124,7 @@ char generateNewInstruction() {
     return rand()%3;
 }
 
-// Loop through instructions and light up LEDs to show the sequence to replicate
+// Loop through instructions and set LCD message to show the sequence to replicate
 void showSequence(char* instructions, int size) {
     int i;
     for (i=0; i<size; i++) {
@@ -136,7 +136,7 @@ void showSequence(char* instructions, int size) {
             case 1:
                 LCDSetMessage("Press it!");
                 break;
-            case 3:
+            case 2:
                 LCDSetMessage("Twist it!");
                 break;
         }
