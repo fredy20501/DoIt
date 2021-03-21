@@ -10,7 +10,6 @@
 #define	TIMER_H
 
 #include <xc.h> // include processor files - each processor file is guarded.
-#include "timer.h"
 
 // Function prototypes
 int isTimerCompleted();
