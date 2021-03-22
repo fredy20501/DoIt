@@ -11,13 +11,13 @@
 
 #include <xc.h> // include processor files - each processor file is guarded.  
 
-// Function prototypes
-void LCDSetMessage(char* msg);
-void LCDSetScore(int score);
-
 // Show given message on top line of LCD
 // Clear the display is msg is empty string
 void LCDSetMessage(char* msg) {
+    // Todo (Fred)
+}
+
+void LCDClearMessage() {
     // Todo (Fred)
 }
 

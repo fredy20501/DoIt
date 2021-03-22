@@ -8,21 +8,21 @@
 #include "xc.h"
 #include <stdlib.h>
 
-// Import other files
-#include "LCD.h"
-#include "timer.h"
-
 // Default FRC is 8MHz, we divide by 2 to 4MHz, so Fcy is 2MHz
 #define FCY 2000000UL   // Fcy (Instruction cycle frequency) in Hz (required for __delayXXX() to work)
 #include <libpic30.h>   // __delayXXX() function macros defined here
+
+// Import other files
+#include "LCD.h"
+#include "timer.h"
 
 // Set communication channel to PGC2 and PGD2 (for debugging)
 #pragma config ICS = 2
 
 // Global static variables
 #define MAX_INSTRUCTIONS 128    // Size of array storing instruction sequence
-#define INSTRUCTION_DELAY 500   // Delay between displaying instructions on LCD (ms))
-#define ROUND_DELAY 2000        // Delay between rounds (ms)
+#define INSTRUCTION_DELAY 750   // Delay between displaying instructions on LCD (ms))
+#define ROUND_DELAY 3000        // Delay between rounds (ms)
 #define GAME_OVER_DELAY 5000    // Delay when lose a game (ms)
 
 // Function prototypes
@@ -51,6 +51,7 @@ int main(void) {
     // Array storing instruction sequence
     char instructions[MAX_INSTRUCTIONS] = {0};
     int size = 0;
+    LCDSetScore(size);
     
     // Main program loop
     while(1) {
@@ -117,6 +118,10 @@ void waitForButton() {
     LCDSetMessage("Button = Start");
     
     // Todo (Uwera)
+
+    __delay_ms(3000); // Placeholder delay
+
+    LCDClearMessage();
 }
 
 // Generate a random instruction (0=joystick, 1=button, 2=potentiometer)
@@ -141,7 +146,7 @@ void showSequence(char* instructions, int size) {
                 break;
         }
         __delay_ms(INSTRUCTION_DELAY);
-        LCDSetMessage("");
+        LCDClearMessage();
     }
 }
 
