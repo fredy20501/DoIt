@@ -10,9 +10,8 @@
 #define	LCD_LIB_H
 
 #include <xc.h> // include processor files - each processor file is guarded.  
-
-//#pragma warning disable 520
 #include <stdint.h>
+#include "LCD_serial.h"
 
 #define LCD_FIRST_ROW          0x80
 #define LCD_SECOND_ROW         0xC0
@@ -45,10 +44,7 @@ void LCD_Begin();
 void LCD_Write_Nibble(uint8_t n)
 {
     LCD_RS = RS;
-    LCD_D4 = n & 0x01;
-    LCD_D5 = (n >> 1) & 0x01;
-    LCD_D6 = (n >> 2) & 0x01;
-    LCD_D7 = (n >> 3) & 0x01;
+    SRSendData(n);
 
     // send enable pulse
     LCD_EN = 0;
@@ -109,14 +105,12 @@ void LCD_Print(char* LCD_Str)
 // Must be called once before any function
 void LCD_Begin()
 {
+    SRInit();
+    
     RS = 0;
-
     LCD_RS = 0;
     LCD_EN = 0;
-    LCD_D4 = 0;
-    LCD_D5 = 0;
-    LCD_D6 = 0;
-    LCD_D7 = 0;
+    SRSendData(0x0);
 
     __delay_ms(40);
     LCD_Cmd(3);

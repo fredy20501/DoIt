@@ -15,12 +15,16 @@
 // Set communication channel to PGC2 and PGD2 (for debugging)
 #pragma config ICS = 2
 
+#define MSG_DELAY 500
+
 int main(void) {
+    // Divide FRC by 2 using postscaler bits
+    CLKDIVbits.FRCDIV = 1;
+    
     // Initialize LCD
     LCDInit();
 
     // LCD testing
-    
     LCDSetMessage("Button = Start");
     __delay_ms(3000);
     LCDClearMessage();
@@ -30,23 +34,23 @@ int main(void) {
         LCDSetScore(score++);
 
         LCDSetMessage("Flick it!");
-        __delay_ms(500);
+        __delay_ms(MSG_DELAY);
         LCDClearMessage();
-        __delay_ms(500);
+        __delay_ms(MSG_DELAY);
         LCDSetMessage("Press it!");
-        __delay_ms(500);
+        __delay_ms(MSG_DELAY);
         LCDClearMessage();
-        __delay_ms(500);
+        __delay_ms(MSG_DELAY);
         LCDSetMessage("Twist it!");
-        __delay_ms(500);
+        __delay_ms(MSG_DELAY);
         LCDClearMessage();
-        __delay_ms(500);
+        __delay_ms(MSG_DELAY);
 
         if (score%5 == 0) {
             LCDSetMessage("Game over!");
-            __delay_ms(500);
+            __delay_ms(MSG_DELAY);
             LCDClearMessage();
-            __delay_ms(500);
+            __delay_ms(MSG_DELAY);
         }
     }
 }
