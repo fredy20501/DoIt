@@ -204,10 +204,12 @@ int listenForSequence(char* instructions, int size) {
 
 // Play sound (0=low-pitched tone, 1=high-pitched tone)
 void playSound(int type) {
-    // Auxiliary PLL
-    
+    //* Auxiliary PLL
+    //todo: What is the correct frequency?
+
     //code example for AFVCO = 1 GHz and AFPLLO = 500 MHz using 8 MHz internal FRC
     // Configure the source clock for the APLL
+
     ACLKCON1bits.FRCSEL = 1; // Select internal FRC as the clock source
     // Configure the APLL prescaler, APLL feedback divider, and both APLL postscalers.
     
@@ -220,30 +222,36 @@ void playSound(int type) {
     ACLKCON1bits.APLLEN = 1;
     
     //--------------------------------------------------------------------------
-    // DAC Configuration
+    //* DAC Configuration
     
     DACCTRL1Lbits.CLKSEL = 2;   // Auxillary PLL 
     DACCTRL1Lbits.DACON = 1;    // Enables DAC modules
 
     DAC1CONLbits.DACEN = 1;     // Enables DACx Module
-    DAC1CONLbits.DACOEN = 1;    // Connects DACX to the DACOUT1 pin    
+    DAC1CONLbits.DACOEN = 1;    // Connects DACx to the DACOUT1 pin    
     //--------------------------------------------------------------------------
-    // Triangle Wave Mode 
-    
-    DAC1DATLbits.DACLOW = 0x100;    // Lower data value
-    DAC1DATHbits.DACDAT = 0xF00;    // Upper data value
+    //* TRIANGLE WAVE MODE
+    //todo: What data value range should be used? 
+
+    /* VOUT = DACDAT * (AVDD)/4095. 
+       Valid values are from 205 (0x0CD) to 3890 (0xF32)*/
+    DAC1DATLbits.DACLOW = 0x100;    // The low data value for DACx 
+    DAC1DATHbits.DACDAT = 0xF00;    // The High data value for DACx  
+
     SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step
     
-    SLP1CONHbits.TWME = 1;          // Enable Triangle Mode
-    SLP1CONHbits.SLOPEN = 1;        // Enable Slope mode
+    SLP1CONHbits.TWME = 1;          // Enable Triangle Mode for DACx
+    SLP1CONHbits.SLOPEN = 1;        // Triangle mode requires SLOPEN to be set to ‘1'
     
     //--------------------------------------------------------------------------
-    //AMPLIFIER
-    
+    //* AMPLIFIER
+    //todo: Should be inputs or outputs?
+    //todo: How is the output mapped to DACOUT?
+
     //SPK_ENABLE: RD14
     TRISDbits.TRISD14 = 1;   // specify as an input
     LATDbits.LATD14 = 1;     // send a logic high
     
-    //SPK_OUT (DACOUT1): RA3, pin type = O
+    // SPK_OUT (DACOUT1): RA3, pin type = O
     TRISAbits.TRISA3 = 1;   // set to input because its not a digital output
 }
