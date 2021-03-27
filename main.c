@@ -229,6 +229,7 @@ void playSound(int type) {
 
     DAC1CONLbits.DACEN = 1;     // Enables DACx Module
     DAC1CONLbits.DACOEN = 1;    // Connects DACx to the DACOUT1 pin    
+    
     //--------------------------------------------------------------------------
     //* TRIANGLE WAVE MODE
     //todo: What data value range should be used? 
@@ -238,20 +239,15 @@ void playSound(int type) {
     DAC1DATLbits.DACLOW = 0x100;    // The low data value for DACx 
     DAC1DATHbits.DACDAT = 0xF00;    // The High data value for DACx  
 
-    SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step
+    SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step 
     
     SLP1CONHbits.TWME = 1;          // Enable Triangle Mode for DACx
     SLP1CONHbits.SLOPEN = 1;        // Triangle mode requires SLOPEN to be set to ‘1'
     
     //--------------------------------------------------------------------------
     //* AMPLIFIER
-    //todo: Should be inputs or outputs?
-    //todo: How is the output mapped to DACOUT?
 
     //SPK_ENABLE: RD14
-    TRISDbits.TRISD14 = 1;   // specify as an input
+    TRISDbits.TRISD14 = 0;   // specify as an input
     LATDbits.LATD14 = 1;     // send a logic high
-    
-    // SPK_OUT (DACOUT1): RA3, pin type = O
-    TRISAbits.TRISA3 = 1;   // set to input because its not a digital output
 }
