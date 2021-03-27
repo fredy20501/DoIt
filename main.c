@@ -204,5 +204,46 @@ int listenForSequence(char* instructions, int size) {
 
 // Play sound (0=low-pitched tone, 1=high-pitched tone)
 void playSound(int type) {
-    // Todo (Carter)
+    // Auxiliary PLL
+    
+    //code example for AFVCO = 1 GHz and AFPLLO = 500 MHz using 8 MHz internal FRC
+    // Configure the source clock for the APLL
+    ACLKCON1bits.FRCSEL = 1; // Select internal FRC as the clock source
+    // Configure the APLL prescaler, APLL feedback divider, and both APLL postscalers.
+    
+    ACLKCON1bits.APLLPRE = 1;       // N1 = 1
+    APLLFBD1bits.APLLFBDIV = 125;   // M = 125
+    APLLDIV1bits.APOST1DIV = 2;     // N2 = 2
+    APLLDIV1bits.APOST2DIV = 1;     // N3 = 1
+    
+    // Enable APLL
+    ACLKCON1bits.APLLEN = 1;
+    
+    //--------------------------------------------------------------------------
+    // DAC Configuration
+    
+    DACCTRL1Lbits.CLKSEL = 2;   // Auxillary PLL 
+    DACCTRL1Lbits.DACON = 1;    // Enables DAC modules
+
+    DAC1CONLbits.DACEN = 1;     // Enables DACx Module
+    DAC1CONLbits.DACOEN = 1;    // Connects DACX to the DACOUT1 pin    
+    //--------------------------------------------------------------------------
+    // Triangle Wave Mode 
+    
+    DAC1DATLbits.DACLOW = 0x100;    // Lower data value
+    DAC1DATHbits.DACDAT = 0xF00;    // Upper data value
+    SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step
+    
+    SLP1CONHbits.TWME = 1;          // Enable Triangle Mode
+    SLP1CONHbits.SLOPEN = 1;        // Enable Slope mode
+    
+    //--------------------------------------------------------------------------
+    //AMPLIFIER
+    
+    //SPK_ENABLE: RD14
+    TRISDbits.TRISD14 = 1;   // specify as an input
+    LATDbits.LATD14 = 1;     // send a logic high
+    
+    //SPK_OUT (DACOUT1): RA3, pin type = O
+    TRISAbits.TRISA3 = 1;   // set to input because its not a digital output
 }
