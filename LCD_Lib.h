@@ -4,6 +4,7 @@
  * https://simple-circuit.com/                                                 *
  *                                                                             *
  ******************************************************************************/
+// Taken from: https://simple-circuit.com/pic-microcontroller-mplab-xc8-lcd/
 // Modified by Frederic Verret
 
 #ifndef LCD_LIB_H

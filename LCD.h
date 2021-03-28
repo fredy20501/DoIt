@@ -12,7 +12,7 @@
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include <stdio.h>
 
-// LCD module connections TODO: REMOVE THIS
+// LCD module connections
 #define LCD_RS LATDbits.LATD3
 #define LCD_EN LATDbits.LATD4
 
