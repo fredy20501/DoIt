@@ -206,25 +206,26 @@ int listenForSequence(char* instructions, int size) {
 void playSound(int type) {
     //* Auxiliary PLL
     //todo: What is the correct frequency?
+    //! You may have to indicate to the aux clk before you trigger it 
 
     //code example for AFVCO = 1 GHz and AFPLLO = 500 MHz using 8 MHz internal FRC
     // Configure the source clock for the APLL
 
     ACLKCON1bits.FRCSEL = 1; // Select internal FRC as the clock source
     // Configure the APLL prescaler, APLL feedback divider, and both APLL postscalers.
-    
+
     ACLKCON1bits.APLLPRE = 1;       // N1 = 1
-    APLLFBD1bits.APLLFBDIV = 125;   // M = 125
-    APLLDIV1bits.APOST1DIV = 2;     // N2 = 2
+    APLLFBD1bits.APLLFBDIV = 9;     // M = 9
+    APLLDIV1bits.APOST1DIV = 1;     // N2 = 1
     APLLDIV1bits.APOST2DIV = 1;     // N3 = 1
-    
+
     // Enable APLL
     ACLKCON1bits.APLLEN = 1;
     
     //--------------------------------------------------------------------------
     //* DAC Configuration
     
-    DACCTRL1Lbits.CLKSEL = 2;   // Auxillary PLL 
+    DACCTRL1Lbits.CLKSEL = 2;   // FDAC = AFPLL Auxillary PLL out
     DACCTRL1Lbits.DACON = 1;    // Enables DAC modules
 
     DAC1CONLbits.DACEN = 1;     // Enables DACx Module
@@ -232,12 +233,9 @@ void playSound(int type) {
     
     //--------------------------------------------------------------------------
     //* TRIANGLE WAVE MODE
-    //todo: What data value range should be used? 
 
-    /* VOUT = DACDAT * (AVDD)/4095. 
-       Valid values are from 205 (0x0CD) to 3890 (0xF32)*/
-    DAC1DATLbits.DACLOW = 0x100;    // The low data value for DACx 
-    DAC1DATHbits.DACDAT = 0xF00;    // The High data value for DACx  
+    DAC1DATLbits.DACLOW = 0xAFF;    // 2815 * (AVdd = 3.3V)/4095 = 2.27
+    DAC1DATHbits.DACDAT = 0xF00;    // 3840 * (AVdd = 3.3V)/4095 = 3.09
 
     SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step 
     
@@ -248,6 +246,6 @@ void playSound(int type) {
     //* AMPLIFIER
 
     //SPK_ENABLE: RD14
-    TRISDbits.TRISD14 = 0;   // specify as an input
+    TRISDbits.TRISD14 = 0;   // output from dspic to amplifier 
     LATDbits.LATD14 = 1;     // send a logic high
 }
