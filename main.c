@@ -205,27 +205,24 @@ int listenForSequence(char* instructions, int size) {
 // Play sound (0=low-pitched tone, 1=high-pitched tone)
 void playSound(int type) {
     //* Auxiliary PLL
-    //todo: What is the correct frequency?
-    //! You may have to indicate to the aux clk before you trigger it 
+    //? Even with the APLLEN bit set, another peripheral must generate a clock request before the APLL will start.
 
-    //code example for AFVCO = 1 GHz and AFPLLO = 500 MHz using 8 MHz internal FRC
-    // Configure the source clock for the APLL
-
-    ACLKCON1bits.FRCSEL = 1; // Select internal FRC as the clock source
-    // Configure the APLL prescaler, APLL feedback divider, and both APLL postscalers.
-
+    ACLKCON1bits.FRCSEL = 1;        // clock source = 8MHz internal FRC 
+    APLLFBD1bits.APLLFBDIV = 125;   // M = 125
     ACLKCON1bits.APLLPRE = 1;       // N1 = 1
-    APLLFBD1bits.APLLFBDIV = 9;     // M = 9
-    APLLDIV1bits.APOST1DIV = 1;     // N2 = 1
+    APLLDIV1bits.APOST1DIV = 2;     // N2 = 2
     APLLDIV1bits.APOST2DIV = 1;     // N3 = 1
 
-    // Enable APLL
-    ACLKCON1bits.APLLEN = 1;
+    // AFPLLO = AFPLLI * [M / (N1 * N2 * N3)]
+    // AFPLLO = 8MHz * [9/(1 * 1 * 1)]
+    // AFPLLO = 500MHz
+
+    ACLKCON1bits.APLLEN = 1; // AFPLLO is connected to the APLL post-divider output 
     
     //--------------------------------------------------------------------------
     //* DAC Configuration
     
-    DACCTRL1Lbits.CLKSEL = 2;   // FDAC = AFPLL Auxillary PLL out
+    DACCTRL1Lbits.CLKSEL = 2;   // FDAC = AFPLLO "Auxillary PLL out"
     DACCTRL1Lbits.DACON = 1;    // Enables DAC modules
 
     DAC1CONLbits.DACEN = 1;     // Enables DACx Module
