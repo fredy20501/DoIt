@@ -32,10 +32,11 @@ char generateNewInstruction();
 void showSequence(char* instructions, int size);
 int listenForSequence(char* instructions, int size);
 void playSound(int type);
-
+void setupSpeaker (void);
 
 int main(void) {
     initialize();
+    setupSpeaker();
     
     // Wait for user to press button to start game
     waitForButton();
@@ -204,45 +205,44 @@ int listenForSequence(char* instructions, int size) {
 
 // Play sound (0=low-pitched tone, 1=high-pitched tone)
 void playSound(int type) {
-    //* Auxiliary PLL
-    //? Even with the APLLEN bit set, another peripheral must generate a clock request before the APLL will start.
+    DAC1DATHbits.DACDAT = 0xF00;        // 3840 * (AVdd = 3.3V)/4095 = 3.09
 
+    if (type) { // high-pitched tone
+        DAC1DATLbits.DACLOW = 0x4FF;    // 1279 * (AVdd = 3.3V)/4095 = 1.03
+    }
+    else { // low-pitched tone
+        DAC1DATLbits.DACLOW = 0x000;    // 0 * (AVdd = 3.3V)/4095 = 0
+    }
+    
+    LATDbits.LATD15 = 1;    // Enable Amplifier 
+    __delay_ms(3000);
+    LATDbits.LATD15 = 0;    // Disabe Amplifier 
+}
+
+void setupSpeaker (void) {
+     /* AUXILIARY PLL
+     *   AFPLLO = AFPLLI * [M / (N1 * N2 * N3)]
+     *   AFPLLO = 8MHz * [9/(1 * 1 * 1)]
+     *   AFPLLO = 500MHz 
+     */
     ACLKCON1bits.FRCSEL = 1;        // clock source = 8MHz internal FRC 
     APLLFBD1bits.APLLFBDIV = 125;   // M = 125
     ACLKCON1bits.APLLPRE = 1;       // N1 = 1
     APLLDIV1bits.APOST1DIV = 2;     // N2 = 2
     APLLDIV1bits.APOST2DIV = 1;     // N3 = 1
-
-    // AFPLLO = AFPLLI * [M / (N1 * N2 * N3)]
-    // AFPLLO = 8MHz * [9/(1 * 1 * 1)]
-    // AFPLLO = 500MHz
-
-    ACLKCON1bits.APLLEN = 1; // AFPLLO is connected to the APLL post-divider output 
+    ACLKCON1bits.APLLEN = 1;        // AFPLLO is connected to the APLL post-divider output  
     
-    //--------------------------------------------------------------------------
-    //* DAC Configuration
-    
+    // DAC CONFIGURATION 
     DACCTRL1Lbits.CLKSEL = 2;   // FDAC = AFPLLO "Auxillary PLL out"
     DACCTRL1Lbits.DACON = 1;    // Enables DAC modules
-
     DAC1CONLbits.DACEN = 1;     // Enables DACx Module
-    DAC1CONLbits.DACOEN = 1;    // Connects DACx to the DACOUT1 pin    
+    DAC1CONLbits.DACOEN = 1;    // Connects DACx to the DACOUT1 pin  
     
-    //--------------------------------------------------------------------------
-    //* TRIANGLE WAVE MODE
-
-    DAC1DATLbits.DACLOW = 0xAFF;    // 2815 * (AVdd = 3.3V)/4095 = 2.27
-    DAC1DATHbits.DACDAT = 0xF00;    // 3840 * (AVdd = 3.3V)/4095 = 3.09
-
+    //TRIANGLE WAVE MODE
     SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step 
-    
     SLP1CONHbits.TWME = 1;          // Enable Triangle Mode for DACx
-    SLP1CONHbits.SLOPEN = 1;        // Triangle mode requires SLOPEN to be set to ‘1'
+    SLP1CONHbits.SLOPEN = 1;        // Triangle mode requires SLOPEN to be set to '1'
     
-    //--------------------------------------------------------------------------
-    //* AMPLIFIER
-
-    //SPK_ENABLE: RD14
-    TRISDbits.TRISD14 = 0;   // output from dspic to amplifier 
-    LATDbits.LATD14 = 1;     // send a logic high
+    // AMPLIFIER
+    TRISDbits.TRISD15 = 0;   // output from dspic to amplifier 
 }
