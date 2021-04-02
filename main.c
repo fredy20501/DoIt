@@ -24,6 +24,7 @@
 #define INSTRUCTION_DELAY 750   // Delay between displaying instructions on LCD (ms))
 #define ROUND_DELAY 3000        // Delay between rounds (ms)
 #define GAME_OVER_DELAY 5000    // Delay when lose a game (ms)
+#define SOUND_DURATION 250      // Duration of the sound effects (ms)
 
 // Function prototypes
 void initialize();
@@ -31,7 +32,7 @@ void waitForButton();
 char generateNewInstruction();
 void showSequence(char* instructions, int size);
 int listenForSequence(char* instructions, int size);
-void playSound(int type
+void playSound(int type);
 void setupSpeaker (void);
 
 int main(void) {
@@ -215,7 +216,7 @@ void playSound(int type) {
     }
     
     LATDbits.LATD15 = 1;    // Enable Amplifier 
-    __delay_ms(250);
+    __delay_ms(SOUND_DURATION);
     LATDbits.LATD15 = 0;    // Disabe Amplifier 
 }
 
