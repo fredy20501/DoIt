@@ -21,10 +21,9 @@
 
 // Global static variables
 #define MAX_INSTRUCTIONS 128    // Size of array storing instruction sequence
-#define INSTRUCTION_DELAY 750   // Delay between displaying instructions on LCD (ms))
-#define ROUND_DELAY 3000        // Delay between rounds (ms)
-#define GAME_OVER_DELAY 5000    // Delay when lose a game (ms)
-#define SOUND_DURATION 250      // Duration of the sound effects (ms)
+#define INSTRUCTION_DELAY 500   // Delay between displaying instructions on LCD (ms))
+#define ROUND_DELAY 2000        // Delay between rounds (ms)
+#define GAME_OVER_DELAY 4000    // Delay when lose a game (ms)
 
 // Function prototypes
 void initialize();
@@ -70,11 +69,11 @@ int main(void) {
         if (size>=MAX_INSTRUCTIONS) result = 0;
         
         if (result == 0) { // Game over
-            // Play fail sound
-            playSound(0);
-            
             // Show game over message
             LCDSetMessage("Game over!");
+            
+            // Play fail sound
+            playSound(0);
             
             // Reset instructions
             int i;
@@ -107,6 +106,7 @@ void initialize() {
     // Divide FRC by 2 using postscaler bits
     CLKDIVbits.FRCDIV = 1;
     
+    setupLCD();
     setupSpeaker();
     setupTimer();
   

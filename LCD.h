@@ -23,14 +23,11 @@
  * LCD_EN: SDA_1 | RD4
  */
 
-
-// Initialize LCD
-void LCDInit() {
-    
+void setupLCD() {
     // Initialize pins (set to outputs)
     TRISDbits.TRISD3 = 0;
     TRISDbits.TRISD4 = 0;
-    
+    // Initialize LCD
     LCD_Begin();
 }
 
