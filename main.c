@@ -208,16 +208,32 @@ int listenForSequence(char* instructions, int size) {
 void playSound(int type) {
     DAC1DATHbits.DACDAT = 0xF00;        // 3840 * (AVdd = 3.3V)/4095 = 3.09
 
-    if (type) { // high-pitched tone
+    if (type) {
+        // high-pitched tone
         DAC1DATLbits.DACLOW = 0x4FF;    // 1279 * (AVdd = 3.3V)/4095 = 1.03
+        
+        // 2 quick beeps
+        enableSpeaker(100, 50);
+        enableSpeaker(100, 50);
     }
-    else { // low-pitched tone
+    else {
+        // low-pitched tone
         DAC1DATLbits.DACLOW = 0x000;    // 0 * (AVdd = 3.3V)/4095 = 0
+        
+        // 3 short beeps and 1 long beep
+        enableSpeaker(250, 100);
+        enableSpeaker(250, 100);
+        enableSpeaker(250, 100);
+        enableSpeaker(750, 100);
     }
-    
+}
+
+// Enable the speaker for the given duration in ms
+void enableSpeaker(int duration, int delay) {
     LATDbits.LATD15 = 1;    // Enable Amplifier 
-    __delay_ms(SOUND_DURATION);
-    LATDbits.LATD15 = 0;    // Disabe Amplifier 
+    __delay_ms(duration);
+    LATDbits.LATD15 = 0;    // Disable Amplifier 
+    __delay_ms(delay);
 }
 
 void setupSpeaker (void) {
