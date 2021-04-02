@@ -31,12 +31,11 @@ void waitForButton();
 char generateNewInstruction();
 void showSequence(char* instructions, int size);
 int listenForSequence(char* instructions, int size);
-void playSound(int type);
+void playSound(int type
 void setupSpeaker (void);
 
 int main(void) {
     initialize();
-    setupSpeaker();
     
     // Wait for user to press button to start game
     waitForButton();
@@ -107,8 +106,9 @@ void initialize() {
     // Divide FRC by 2 using postscaler bits
     CLKDIVbits.FRCDIV = 1;
     
-    // Initialize timer
+    setupSpeaker();
     setupTimer();
+  
     // Start timer (will be used for random seed generation)
     startTimer();
 }
@@ -215,14 +215,14 @@ void playSound(int type) {
     }
     
     LATDbits.LATD15 = 1;    // Enable Amplifier 
-    __delay_ms(3000);
+    __delay_ms(250);
     LATDbits.LATD15 = 0;    // Disabe Amplifier 
 }
 
 void setupSpeaker (void) {
      /* AUXILIARY PLL
      *   AFPLLO = AFPLLI * [M / (N1 * N2 * N3)]
-     *   AFPLLO = 8MHz * [9/(1 * 1 * 1)]
+     *   AFPLLO = 8MHz * [125/(1 * 2 * 1)]
      *   AFPLLO = 500MHz 
      */
     ACLKCON1bits.FRCSEL = 1;        // clock source = 8MHz internal FRC 
