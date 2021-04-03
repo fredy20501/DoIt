@@ -10,256 +10,158 @@
 
 // Default FRC is 8MHz, we divide by 2 to 4MHz, so Fcy is 2MHz
 #define FCY 2000000UL   // Fcy (Instruction cycle frequency) in Hz (required for __delayXXX() to work)
-#include <libpic30.h>   // __delayXXX() function macros defined here
-
-// Import other files
-#include "LCD.h"
-#include "timer.h"
+#include <libpic30.h>
+#include <p33CK256MP506.h>   // __delayXXX() function macros defined here
 
 // Set communication channel to PGC2 and PGD2 (for debugging)
 #pragma config ICS = 2
 
-// Global static variables
-#define MAX_INSTRUCTIONS 128    // Size of array storing instruction sequence
-#define INSTRUCTION_DELAY 500   // Delay between displaying instructions on LCD (ms))
-#define ROUND_DELAY 2000        // Delay between rounds (ms)
-#define GAME_OVER_DELAY 4000    // Delay when lose a game (ms)
+#define POTENTIOMETER_SENSITIVITY 60    // Speed that potentiometer must be moved to trigger an input (in degrees/s)
+#define JOYSTICK_SENSITIVITY 5         // Threshold that joystick must be moved to trigger an input (in degrees)
+#define INPUT_POLL_DELAY 100            // Delay between input polling (ms)
 
-// Function prototypes
 void initialize();
-void waitForButton();
-char generateNewInstruction();
-void showSequence(char* instructions, int size);
-int listenForSequence(char* instructions, int size);
-void playSound(int type);
-void setupSpeaker (void);
+void setupADC();
+int readPotentiometer();
+int readJoystickX();
+int readJoystickY();
+int checkPotInput(value, previousValue);
+int checkJoyInput();
 
 int main(void) {
-    initialize();
-    
-    // Wait for user to press button to start game
-    waitForButton();
-    
-    // Initialize RNG using current timer value 
-    // (timer value will depend on when user first presses the button which is random)
-    srand(TMR1);
-    stopTimer();
-    
-    // Enable timer interrupt now that RNG is initialized
-    enableTimerInterrupt();
-    
-    // Array storing instruction sequence
-    char instructions[MAX_INSTRUCTIONS] = {0};
-    int size = 0;
-    LCDSetScore(size);
-    
-    // Main program loop
-    while(1) {
-        
-        // Generate new instruction
-        instructions[size++] = generateNewInstruction();
-        
-        // Display sequence to user
-        showSequence(instructions, size);
-        
-        // Wait for user to input the sequence
-        int result = listenForSequence(instructions, size);
-        
-        // Force game to end if reached max instruction number (prevent array overflow)
-        if (size>=MAX_INSTRUCTIONS) result = 0;
-        
-        if (result == 0) { // Game over
-            // Show game over message
-            LCDSetMessage("Game over!");
-            
-            // Play fail sound
-            playSound(0);
-            
-            // Reset instructions
-            int i;
-            for (i=0; i<size; i++) instructions[i] = 0;
-            size = 0;
-            
-            // Wait before overriding game over message
-            __delay_ms(GAME_OVER_DELAY);
-            
-            // Wait for user to press button to start new game
-            waitForButton();
-            
-            // Update score (i.e. reset to 0)
-            LCDSetScore(size);
-        }
-        else {
-            // Update score
-            LCDSetScore(size);
-            
-            // Play success sound
-            playSound(1);
-            
-            // Round completed successfully, wait before next round
-            __delay_ms(ROUND_DELAY);
-        }
-    }
-}
-
-void initialize() {
     // Divide FRC by 2 using postscaler bits
     CLKDIVbits.FRCDIV = 1;
     
-    setupLCD();
-    setupSpeaker();
-    setupTimer();
-  
-    // Start timer (will be used for random seed generation)
-    startTimer();
-}
-
-// Wait until button is pressed
-void waitForButton() {
-    // Display idle message on LCD
-    LCDSetMessage("Button = Start");
+    setupADC();
     
-    // Todo (Uwera)
-
-    __delay_ms(3000); // Placeholder delay
-
-    LCDClearMessage();
-}
-
-// Generate a random instruction (0=joystick, 1=button, 2=potentiometer)
-char generateNewInstruction() {
-    return rand()%3;
-}
-
-// Loop through instructions and set LCD message to show the sequence to replicate
-void showSequence(char* instructions, int size) {
-    int i;
-    for (i=0; i<size; i++) {
-        __delay_ms(INSTRUCTION_DELAY);
-        switch(instructions[i]) {
-            case 0:
-                LCDSetMessage("Flick it!");
-                break;
-            case 1:
-                LCDSetMessage("Press it!");
-                break;
-            case 2:
-                LCDSetMessage("Twist it!");
-                break;
-        }
-        __delay_ms(INSTRUCTION_DELAY);
-        LCDClearMessage();
-    }
-}
-
-
-// Wait for inputs in the given sequence
-// Returns 0 if failed, 1 if successful
-int listenForSequence(char* instructions, int size) {
-    // Loop through instructions and wait for each input
-    int i;
-    for (i=0; i<size; i++) {
-        stopTimer();
-        startTimer();
+    // Ouput pin for LED
+    // (CS/RB2 -> potentiometer LED) 
+    TRISBbits.TRISB2 = 0;
+    LATBbits.LATB2 = 0;
+    // (SDK/RB7 -> joystick LED) 
+    TRISBbits.TRISB7 = 0;
+    LATBbits.LATB7 = 0;
+    
+    while (1) {
+        int inputDetected = -1; // will store the type of the first input detected
         
-        // Store first input that was detected
-        // (0=joystick, 1=button, 2=potentiometer)
-        char inputDetected = -1;
-        
-        while(!isTimerCompleted()) {
-            // Todo: Detect an input (Uwera)
-            /*
-            if (joystick == 1) {
-                stopTimer();
+        int potPreviousValue = readPotentiometer();
+        int potValue = 0;
+        while(1) {
+            // == CHECK POTENTIOMETER ==
+            potValue = readPotentiometer();
+            if (checkPotInput(potValue, potPreviousValue)) {
                 inputDetected = 0;
-                // Wait until input stops
-                while (joystick == 1);
+                LATBbits.LATB2 = 1; // turn on led
+                // Wait until potentiometer stops turning
+                while (checkPotInput(potValue, potPreviousValue)) {
+                    potPreviousValue = potValue;
+                    __delay_ms(INPUT_POLL_DELAY);
+                    potValue = readPotentiometer();
+                }
+                LATBbits.LATB2 = 0; // turn off led
                 break;
             }
-            if (button == 1) {
-                stopTimer();
+            potPreviousValue = potValue;
+            
+            // == CHECK JOYSTICK ==
+            if (checkJoyInput()) {
                 inputDetected = 1;
-                // Wait until input stops
-                while (button == 1);
+                LATBbits.LATB7 = 1; // turn on led
+                // Wait until joystick returns to neutral
+                while (checkJoyInput());
+                LATBbits.LATB7 = 0; // turn off led
                 break;
             }
-            if (potentiometer == 1) {
-                stopTimer();
-                inputDetected = 2;
-                // Wait until input stops
-                while (potentiometer == 0);
-                break;
-            }
-            */
+
+            // Check inputs only every so often
+            __delay_ms(INPUT_POLL_DELAY);
         }
-        
-        // Check if timer ran out or button press was wrong
-        if (isTimerCompleted() || inputDetected != instructions[i]) {
-            return 0; // Game over
-        }
-        
-        // Small delay to prevent detecting 1 input as multiple inputs (i.e. manual debouncing)
-        __delay_ms(50);
-    }
-    return 1;
-}
 
-// Play sound (0=low-pitched tone, 1=high-pitched tone)
-void playSound(int type) {
-    DAC1DATHbits.DACDAT = 0xF00;        // 3840 * (AVdd = 3.3V)/4095 = 3.09
-
-    if (type) {
-        // high-pitched tone
-        DAC1DATLbits.DACLOW = 0x4FF;    // 1279 * (AVdd = 3.3V)/4095 = 1.03
-        
-        // 2 quick beeps
-        enableSpeaker(100, 50);
-        enableSpeaker(100, 50);
-    }
-    else {
-        // low-pitched tone
-        DAC1DATLbits.DACLOW = 0x000;    // 0 * (AVdd = 3.3V)/4095 = 0
-        
-        // 3 short beeps and 1 long beep
-        enableSpeaker(250, 100);
-        enableSpeaker(250, 100);
-        enableSpeaker(250, 100);
-        enableSpeaker(750, 100);
+        __delay_ms(1000);
     }
 }
 
-// Enable the speaker for the given duration in ms
-void enableSpeaker(int duration, int delay) {
-    LATDbits.LATD15 = 1;    // Enable Amplifier 
-    __delay_ms(duration);
-    LATDbits.LATD15 = 0;    // Disable Amplifier 
-    __delay_ms(delay);
+// Given current and previous value returns 1 if input was detected, 0 otherwise
+int checkPotInput(value, previousValue) {
+    return abs((value - previousValue)>(POTENTIOMETER_SENSITIVITY/0.66));
+    // ** Potentiometer Calculations **
+    // Min value: 0x0005 = 5
+    // Max value: 0x0FFC = 4092
+    // ADC output Range: 4087
+    // Angle range of potentiometer: 270 degrees
+    // Change of 1 in ADC output = 0.066 degrees
 }
 
-void setupSpeaker (void) {
-     /* AUXILIARY PLL
-     *   AFPLLO = AFPLLI * [M / (N1 * N2 * N3)]
-     *   AFPLLO = 8MHz * [125/(1 * 2 * 1)]
-     *   AFPLLO = 500MHz 
-     */
-    ACLKCON1bits.FRCSEL = 1;        // clock source = 8MHz internal FRC 
-    APLLFBD1bits.APLLFBDIV = 125;   // M = 125
-    ACLKCON1bits.APLLPRE = 1;       // N1 = 1
-    APLLDIV1bits.APOST1DIV = 2;     // N2 = 2
-    APLLDIV1bits.APOST2DIV = 1;     // N3 = 1
-    ACLKCON1bits.APLLEN = 1;        // AFPLLO is connected to the APLL post-divider output  
+// Read the values for the joystick axes and returns 1 if the joystick is not neutral, 0 otherwise
+int checkJoyInput() {
+    int joyXValue = readJoystickX();
+    int joyYValue = readJoystickY();
+    int detectedJoyX = abs(joyXValue - 0x800)>(JOYSTICK_SENSITIVITY/0.0122);
+    int detectedJoyY = abs(joyYValue - 0x7E0)>(JOYSTICK_SENSITIVITY/0.0223);
+    return detectedJoyX || detectedJoyY;
+    // ** Joystick X Calculations **
+    // Min value:       0x000
+    // Neutral value:   0x800 to 0x80A
+    // Max value:       0xFFE
+    // ADC output Range: 2046 (one side)
+    // Angle range of X axis: 45 degrees (one side)
+    // Change of 1 in ADC output = 0.0122 degrees
+    // ** Joystick Y Calculations **
+    // Min value:       0x008
+    // Neutral value:   0x7D6 to 0x7E3
+    // Max value:       0xFFB
+    // ADC output Range: 2016 (one side)
+    // Angle range of Y axis: 45 degrees (one side)
+    // Change of 1 in ADC output = 0.0223 degrees
+}
+
+void setupADC() {
+    // Pin Configuration
+    // Potentiometer:   AN12/RC0 -> AN mikrobus A
+    // Joystick X:      AN13/RC1 -> MOSI mikrobus B
+    // Joystick Y:      AN14/RC2 -> MISO mikrobus B
+    TRISCbits.TRISC0 = 1;
+    TRISCbits.TRISC1 = 1;
+    TRISCbits.TRISC2 = 1;
+    ANSELCbits.ANSELC0 = 1;
+    ANSELCbits.ANSELC1 = 1;
+    ANSELCbits.ANSELC2 = 1;
     
-    // DAC CONFIGURATION 
-    DACCTRL1Lbits.CLKSEL = 2;   // FDAC = AFPLLO "Auxillary PLL out"
-    DACCTRL1Lbits.DACON = 1;    // Enables DAC modules
-    DAC1CONLbits.DACEN = 1;     // Enables DACx Module
-    DAC1CONLbits.DACOEN = 1;    // Connects DACx to the DACOUT1 pin  
+    // ADC Configuration
+    ADCON1Hbits.FORM = 0;           // Data output format = integer (default)
+    ADCON1Hbits.SHRRES = 0b11;      // Resolution = 12 bits (default)
+    ADCON2Hbits.SHRSAMC = 0;        // Sampling duration in clock periods: Tadcore = 2 (default)
+    ADCON3Lbits.SHRSAMP = 0;        // Set ADC core sampling to be triggered by CNVRTCH bit
+    ADCON3Hbits.CLKSEL = 0;         // Use Fp (peripheral clock) [2MHz]
+    ADCON5Hbits.WARMTIME = 0b0101;  // Set power up delay to 32 source clock periods (need at least 10us which is 20 periods given Fc = 2MHz)
     
-    //TRIANGLE WAVE MODE
-    SLP1DATbits.SLPDAT = 0x1;       // Slope rate, counts per step 
-    SLP1CONHbits.TWME = 1;          // Enable Triangle Mode for DACx
-    SLP1CONHbits.SLOPEN = 1;        // Triangle mode requires SLOPEN to be set to '1'
+    // Enable ADC Module (only enable after ADC module has been configured)
+    ADCON1Lbits.ADON = 1;
     
-    // AMPLIFIER
-    TRISDbits.TRISD15 = 0;   // output from dspic to amplifier 
+    // Setup Shared Core
+    ADCON5Lbits.SHRPWR = 1;             // Shared ADC core power enable
+    while (ADCON5Lbits.SHRRDY == 0);    // Wait until shared ADC core is ready
+    ADCON3Hbits.SHREN = 1;              // Enable shared ADC core
+}
+
+int readPotentiometer() {
+    ADCON3Lbits.CNVCHSEL = 12;      // Set input channel
+    ADCON3Lbits.CNVRTCH = 1;        // Trigger conversion (this bit gets cleared by hw on next cycle)
+    while (!ADSTATLbits.AN12RDY);   // Wait until conversion result is ready
+    return ADCBUF12;                // Read result
+}
+
+int readJoystickX() {
+    ADCON3Lbits.CNVCHSEL = 13;      // Set input channel
+    ADCON3Lbits.CNVRTCH = 1;        // Trigger conversion (this bit gets cleared by hw on next cycle)
+    while (!ADSTATLbits.AN13RDY);   // Wait until conversion result is ready
+    return ADCBUF13;                // Read result
+}
+
+int readJoystickY() {
+    ADCON3Lbits.CNVCHSEL = 14;      // Set input channel
+    ADCON3Lbits.CNVRTCH = 1;        // Trigger conversion (this bit gets cleared by hw on next cycle)
+    while (!ADSTATLbits.AN14RDY);   // Wait until conversion result is ready
+    return ADCBUF14;                // Read result
 }
