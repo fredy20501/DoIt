@@ -54,7 +54,7 @@ void playSound(int type) {
         // 1 quick beeps
         enableSpeaker(100, 50);
     }
-    if (type == 1) {
+    else if (type == 1) {
         // high-pitched tone
         DAC1DATLbits.DACLOW = 0x4FF;    // 1279 * (AVdd = 3.3V)/4095 = 1.03
         
