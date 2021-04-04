@@ -33,7 +33,6 @@ char generateNewInstruction();
 void showSequence(char* instructions, int size);
 int listenForSequence(char* instructions, int size);
 
-
 int main(void) {
     initialize();
     
