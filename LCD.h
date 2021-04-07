@@ -1,8 +1,6 @@
 /*
  * File:   LCD.c
- * Author: frede
- *
- * Created on March 18, 2021, 9:13 PM
+ * Author: Frederic Verret
  */
 
 // This is a guard condition so that contents of this file are not included more than once.  

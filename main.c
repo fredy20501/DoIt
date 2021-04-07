@@ -1,5 +1,5 @@
 /*
- * File: main.c
+ * File:   main.c
  * Author: Frederic Verret
  */
 

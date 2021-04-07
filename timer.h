@@ -1,8 +1,6 @@
 /*
  * File:   timer.c
- * Author: frede
- *
- * Created on March 19, 2021, 9:19 AM
+ * Author: Frederic Verret
  */
 
 // This is a guard condition so that contents of this file are not included more than once.  
