@@ -22,9 +22,9 @@
 // Global static variables
 #define MAX_INSTRUCTIONS 128    // Size of array storing instruction sequence
 #define INSTRUCTION_DELAY 500   // Delay between displaying instructions on LCD (ms))
-#define ROUND_DELAY 2000        // Delay between rounds (ms)
-#define GAME_OVER_DELAY 4000    // Delay when lose a game (ms)
-#define INPUT_POLL_DELAY 100    // Delay between input polling (ms)
+#define ROUND_DELAY 500        // Delay between rounds (ms)
+#define GAME_OVER_DELAY 3000    // Delay when lose a game (ms)
+#define BUTTON PORTCbits.RC7
 
 // Function prototypes
 void initialize();
@@ -35,55 +35,6 @@ int listenForSequence(char* instructions, int size);
 
 int main(void) {
     initialize();
-    
-    // ============== ADC TEST ==============
-    // Ouput pin for LED
-    // (CS/RB2 -> potentiometer LED) 
-    TRISBbits.TRISB2 = 0;
-    LATBbits.LATB2 = 0;
-    // (SDK/RB7 -> joystick LED) 
-    TRISBbits.TRISB7 = 0;
-    LATBbits.LATB7 = 0;
-    
-    while (1) {
-        int inputDetected = -1; // will store the type of the first input detected
-        
-        int potPreviousValue = readPotentiometer();
-        int potValue = 0;
-        while(1) {
-            // == CHECK POTENTIOMETER ==
-            potValue = readPotentiometer();
-            if (checkPotInput(potValue, potPreviousValue)) {
-                inputDetected = 0;
-                LATBbits.LATB2 = 1; // turn on led
-                // Wait until potentiometer stops turning
-                while (checkPotInput(potValue, potPreviousValue)) {
-                    potPreviousValue = potValue;
-                    __delay_ms(INPUT_POLL_DELAY);
-                    potValue = readPotentiometer();
-                }
-                LATBbits.LATB2 = 0; // turn off led
-                break;
-            }
-            potPreviousValue = potValue;
-            
-            // == CHECK JOYSTICK ==
-            if (checkJoyInput()) {
-                inputDetected = 1;
-                LATBbits.LATB7 = 1; // turn on led
-                // Wait until joystick returns to neutral
-                while (checkJoyInput());
-                LATBbits.LATB7 = 0; // turn off led
-                break;
-            }
-
-            // Check inputs only every so often
-            __delay_ms(INPUT_POLL_DELAY);
-        }
-
-        __delay_ms(1000);
-    }
-    // =================================
     
     // Wait for user to press button to start game
     waitForButton();
@@ -154,6 +105,11 @@ void initialize() {
     // Divide FRC by 2 using postscaler bits
     CLKDIVbits.FRCDIV = 1;
     
+    // Button pin: RST_1 | RC7  (Digital input w/ pull-up resistor)
+    TRISCbits.TRISC7 = 1;
+    ANSELCbits.ANSELC7 = 0;
+    CNPUCbits.CNPUC7 = 1;
+    
     setupLCD();
     setupSpeaker();
     setupADC();
@@ -168,9 +124,8 @@ void waitForButton() {
     // Display idle message on LCD
     LCDSetMessage("Button = Start");
     
-    // Todo (Uwera)
-
-    __delay_ms(3000); // Placeholder delay
+    while (BUTTON == 1); // Wait for button to be pressed
+    while (BUTTON == 0); // Wait for button to be released
 
     LCDClearMessage();
 }
@@ -214,9 +169,45 @@ int listenForSequence(char* instructions, int size) {
         // Store first input that was detected
         // (0=joystick, 1=button, 2=potentiometer)
         char inputDetected = -1;
-        
+        int potPreviousValue = readPotentiometer();
+        int potValue = 0;
         while(!isTimerCompleted()) {
-            // Todo: Detect an input (Uwera)
+            // == CHECK BUTTON ==
+            if (BUTTON == 0) {
+                inputDetected = 1;
+                playSound(2);
+                // Wait until button is released
+                while (BUTTON == 0);
+                break;
+            }
+            
+            // == CHECK JOYSTICK ==
+            if (checkJoyInput()) {
+                inputDetected = 0;
+                playSound(2);
+                // Wait until joystick returns to neutral
+                while (checkJoyInput());
+                break;
+            }
+            
+            // == CHECK POTENTIOMETER ==
+            potValue = readPotentiometer();
+            if (checkPotInput(potValue, potPreviousValue)) {
+                inputDetected = 2;
+                playSound(2);
+                // Wait until potentiometer stops turning
+                while (checkPotInput(potValue, potPreviousValue)) {
+                    potPreviousValue = potValue;
+                    __delay_ms(INPUT_POLL_DELAY);
+                    potValue = readPotentiometer();
+                }
+                break;
+            }
+            potPreviousValue = potValue;
+            
+            // Check inputs only every so often
+            // (this affects the speed the potentiometer must be turned)
+            __delay_ms(INPUT_POLL_DELAY);
         }
         
         // Check if timer ran out or button press was wrong

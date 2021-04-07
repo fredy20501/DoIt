@@ -48,13 +48,13 @@ void enableSpeaker(int duration, int delay) {
 void playSound(int type) {
     DAC1DATHbits.DACDAT = 0xF00;        // 3840 * (AVdd = 3.3V)/4095 = 3.09
     if (type == 2) {
-        // high-pitched tone
-        DAC1DATLbits.DACLOW = 0x4FF;    // 1279 * (AVdd = 3.3V)/4095 = 1.03
+        // low-pitched tone
+        DAC1DATLbits.DACLOW = 0x000;    // 0 * (AVdd = 3.3V)/4095 = 0
         
-        // 1 quick beeps
+        // 1 quick low-pitch beep
         enableSpeaker(100, 50);
     }
-    if (type == 1) {
+    else if (type == 1) {
         // high-pitched tone
         DAC1DATLbits.DACLOW = 0x4FF;    // 1279 * (AVdd = 3.3V)/4095 = 1.03
         
@@ -62,7 +62,7 @@ void playSound(int type) {
         enableSpeaker(100, 50);
         enableSpeaker(100, 50);
     }
-    else {
+    else if (type == 0) {
         // low-pitched tone
         DAC1DATLbits.DACLOW = 0x000;    // 0 * (AVdd = 3.3V)/4095 = 0
         

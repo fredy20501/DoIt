@@ -13,20 +13,20 @@
 #include <stdio.h>
 
 // LCD module connections
-#define LCD_RS LATDbits.LATD3
-#define LCD_EN LATDbits.LATD4
+#define LCD_RS LATBbits.LATB2
+#define LCD_EN LATBbits.LATB7
 
 #include "LCD_Lib.h"
 
 /* === Pins Used ===
- * LCD_RS: SCL_1 | RD3
- * LCD_EN: SDA_1 | RD4
+ * LCD_RS: CS_1  | RB2
+ * LCD_EN: SCK_1 | RB7
  */
 
 void setupLCD() {
     // Initialize pins (set to outputs)
-    TRISDbits.TRISD3 = 0;
-    TRISDbits.TRISD4 = 0;
+    TRISBbits.TRISB2 = 0;
+    TRISBbits.TRISB7 = 0;
     // Initialize LCD
     LCD_Begin();
 }

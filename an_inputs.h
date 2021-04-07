@@ -10,18 +10,20 @@
 
 #define POTENTIOMETER_SENSITIVITY 60    // Speed that potentiometer must be moved to trigger an input (in degrees/s)
 #define JOYSTICK_SENSITIVITY 5          // Threshold that joystick must be moved to trigger an input (in degrees)
+#define INPUT_POLL_DELAY 100            // Delay between input polling (ms)
 
 void setupADC() {
-    // Pin Configuration
-    // Potentiometer:   AN12/RC0 -> AN mikrobus A
-    // Joystick X:      AN13/RC1 -> MOSI mikrobus B
-    // Joystick Y:      AN14/RC2 -> MISO mikrobus B
+    /* === Pins Used ===
+    * Potentiometer:    AN_1    | RC0/AN12
+    * Joystick X:       MOSI_1  | RB9/AN11
+    * Joystick Y:       MISO_1  | RB8/AN10
+    */
     TRISCbits.TRISC0 = 1;
-    TRISCbits.TRISC1 = 1;
-    TRISCbits.TRISC2 = 1;
+    TRISBbits.TRISB9 = 1;
+    TRISBbits.TRISB8 = 1;
     ANSELCbits.ANSELC0 = 1;
-    ANSELCbits.ANSELC1 = 1;
-    ANSELCbits.ANSELC2 = 1;
+    ANSELBbits.ANSELB9 = 1;
+    ANSELBbits.ANSELB8 = 1;
     
     // ADC Configuration
     ADCON1Hbits.FORM = 0;           // Data output format = integer (default)
@@ -48,22 +50,22 @@ int readPotentiometer() {
 }
 
 int readJoystickX() {
-    ADCON3Lbits.CNVCHSEL = 13;      // Set input channel
+    ADCON3Lbits.CNVCHSEL = 11;      // Set input channel
     ADCON3Lbits.CNVRTCH = 1;        // Trigger conversion (this bit gets cleared by hw on next cycle)
-    while (!ADSTATLbits.AN13RDY);   // Wait until conversion result is ready
-    return ADCBUF13;                // Read result
+    while (!ADSTATLbits.AN11RDY);   // Wait until conversion result is ready
+    return ADCBUF11;                // Read result
 }
 
 int readJoystickY() {
-    ADCON3Lbits.CNVCHSEL = 14;      // Set input channel
+    ADCON3Lbits.CNVCHSEL = 10;      // Set input channel
     ADCON3Lbits.CNVRTCH = 1;        // Trigger conversion (this bit gets cleared by hw on next cycle)
-    while (!ADSTATLbits.AN14RDY);   // Wait until conversion result is ready
-    return ADCBUF14;                // Read result
+    while (!ADSTATLbits.AN10RDY);   // Wait until conversion result is ready
+    return ADCBUF10;                // Read result
 }
 
 // Given current and previous value returns 1 if input was detected, 0 otherwise
 int checkPotInput(value, previousValue) {
-    return abs((value - previousValue)>(POTENTIOMETER_SENSITIVITY/0.66));
+    return abs((value - previousValue))>(POTENTIOMETER_SENSITIVITY/0.66);
     // ** Potentiometer Calculations **
     // Min value: 0x0005 = 5
     // Max value: 0x0FFC = 4092
