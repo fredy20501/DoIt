@@ -10,7 +10,7 @@
 
 #define POTENTIOMETER_SENSITIVITY 60    // Speed that potentiometer must be moved to trigger an input (in degrees/s)
 #define JOYSTICK_SENSITIVITY 5          // Threshold that joystick must be moved to trigger an input (in degrees)
-#define INPUT_POLL_DELAY 100            // Delay between input polling (ms)
+#define INPUT_POLL_DELAY 100            // Delay between input polling (ms) -> this affects the potentiometer sensitivity
 
 void setupADC() {
     /* === Pins Used ===
@@ -66,7 +66,7 @@ int readJoystickY() {
 // Given current and previous value returns 1 if input was detected, 0 otherwise
 int checkPotInput(value, previousValue) {
     return abs((value - previousValue))>(POTENTIOMETER_SENSITIVITY/0.66);
-    // ** Potentiometer Calculations **
+    // ** Potentiometer Measurements/Calculations **
     // Min value: 0x0005 = 5
     // Max value: 0x0FFC = 4092
     // ADC output Range: 4087
@@ -78,23 +78,23 @@ int checkPotInput(value, previousValue) {
 int checkJoyInput() {
     int joyXValue = readJoystickX();
     int joyYValue = readJoystickY();
-    int detectedJoyX = abs(joyXValue - 0x800)>(JOYSTICK_SENSITIVITY/0.0122);
-    int detectedJoyY = abs(joyYValue - 0x7E0)>(JOYSTICK_SENSITIVITY/0.0223);
+    int detectedJoyX = abs(joyXValue - 0x800)>(JOYSTICK_SENSITIVITY/0.022);
+    int detectedJoyY = abs(joyYValue - 0x7E0)>(JOYSTICK_SENSITIVITY/0.022);
     return detectedJoyX || detectedJoyY;
-    // ** Joystick X Calculations **
+    // ** Joystick X Measurements/Calculations **
     // Min value:       0x000
     // Neutral value:   0x800 to 0x80A
     // Max value:       0xFFE
-    // ADC output Range: 2046 (one side)
-    // Angle range of X axis: 45 degrees (one side)
-    // Change of 1 in ADC output = 0.0122 degrees
-    // ** Joystick Y Calculations **
+    // ADC output Range: 4094
+    // Angle range of X axis: 90 degrees
+    // Change of 1 in ADC output = 0.0220 degrees
+    // ** Joystick Y MeasurementsCalculations **
     // Min value:       0x008
     // Neutral value:   0x7D6 to 0x7E3
     // Max value:       0xFFB
-    // ADC output Range: 2016 (one side)
-    // Angle range of Y axis: 45 degrees (one side)
-    // Change of 1 in ADC output = 0.0223 degrees
+    // ADC output Range: 4083
+    // Angle range of Y axis: 90 degrees
+    // Change of 1 in ADC output = 0.0220 degrees
 }
 
 #endif	/* XC_AN_INPUTS_H */
